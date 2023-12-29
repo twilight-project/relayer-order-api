@@ -3,6 +3,7 @@ use quisquislib::accounts::SigmaProof;
 use relayerwalletlib::verify_client_message::{
     verify_query_order, verify_settle_requests, verify_trade_lend_order,
 };
+use relayerwalletlib::zkoswalletlib::relayer_types;
 use serde_derive::{Deserialize, Serialize};
 // use transaction::verify_relayer::{
 //     verify_query_order, verify_settle_requests, verify_trade_lend_order,
@@ -94,7 +95,7 @@ pub struct ExecuteLendOrderZkos {
 }
 impl ExecuteLendOrderZkos {
     pub fn verify_order(&mut self) -> Result<(), &'static str> {
-        verify_settle_requests(self.msg.input.clone(), self.msg.signature.clone())
+        verify_settle_requests(self.msg.output.clone(), self.msg.signature.clone())
     }
 }
 
