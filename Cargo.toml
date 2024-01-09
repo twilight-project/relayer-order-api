@@ -37,13 +37,11 @@ git = "ssh://github.com/twilight-project/ZkSchnorr.git"
 git = "ssh://github.com/twilight-project/ZkOS.git"
 branch = "develop"
 [dependencies.zkos-relayer-wallet]
-# git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
-# branch = "relayer-connect"
-path = "../zkos-relayer-wallet"
+git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
+branch = "develop"
 [dependencies.zkos-client-wallet]
-# git = "ssh://github.com/twilight-project/zkos-client-wallet.git"
-# branch = "develop"
-path = "../zkos-client-wallet"
+git = "ssh://github.com/twilight-project/zkos-client-wallet.git"
+branch = "develop"
 
 
 # [dependencies.transaction]
@@ -58,3 +56,5 @@ path = "../zkos-client-wallet"
 # path = "../../ZkOS/address"
 # [dependencies.zkos-relayer-wallet]
 # path = "../../zkos-relayer-wallet"
+# [dependencies.zkos-client-wallet]
+# path = "../../zkos-client-wallet"
