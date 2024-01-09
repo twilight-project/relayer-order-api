@@ -6,7 +6,7 @@ use crate::relayer::*;
 use jsonrpc_core::types::error::Error as JsonRpcError;
 use jsonrpc_http_server::{
     hyper,
-    jsonrpc_core::{MetaIoHandler, Metadata, Params, Value},
+    jsonrpc_core::{MetaIoHandler, Params},
     ServerBuilder,
 };
 // use serde_derive::{Deserialize, Serialize};
@@ -59,7 +59,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(mut ordertx) => {
+                Ok(ordertx) => {
                     match verify_trade_lend_order(&ordertx.input) {
                         Ok(_) => {
                             let mut order_request = ordertx.create_trader_order.clone();
@@ -164,7 +164,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(mut ordertx) => {
+                Ok(ordertx) => {
                     match verify_trade_lend_order(&ordertx.input) {
                         Ok(_) => {
                             //to get public key from data
@@ -260,7 +260,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(mut ordertx) => {
+                Ok(ordertx) => {
                     match verify_settle_requests(&ordertx.msg) {
                         Ok(_) => {
                             let mut settle_request = ordertx.execute_trader_order.clone();
@@ -350,7 +350,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(mut ordertx) => {
+                Ok(ordertx) => {
                     //to get public key from data
 
                     match verify_settle_requests(&ordertx.msg) {
@@ -440,7 +440,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(mut ordertx) => {
+                Ok(ordertx) => {
                     //to get public key from data
 
                     match verify_query_order(
