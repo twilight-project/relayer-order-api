@@ -1,18 +1,22 @@
 use crate::config::*;
 use crate::kafkalib::kafkacmd;
 // use crate::relayer::RpcCommand;
-use super::api::Meta;
 use crate::relayer::*;
 use jsonrpc_core::types::error::Error as JsonRpcError;
 use jsonrpc_http_server::{
     hyper,
-    jsonrpc_core::{MetaIoHandler, Params},
+    jsonrpc_core::{MetaIoHandler, Metadata, Params},
     ServerBuilder,
 };
-// use serde_derive::{Deserialize, Serialize};
 use relayerwalletlib::verify_client_message::*;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::SystemTime;
+#[derive(Default, Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct Meta {
+    pub metadata: HashMap<String, Option<String>>,
+}
+impl Metadata for Meta {}
 // #[derive(Default, Clone, Debug, Deserialize, Serialize, PartialEq)]
 // pub struct Meta {
 //     pub metadata: HashMap<String, Option<String>>,
@@ -72,20 +76,24 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let response_clone = order_request.account_id.clone();
                             //
                             let mut meta_clone = meta.clone();
-                            meta_clone.metadata.insert(
-                                String::from("zkos_data"),
-                                Some(
-                                    serde_json::to_string(
-                                        &bincode::serialize(&ordertx.input).unwrap(),
-                                    )
-                                    .unwrap(),
-                                ),
-                            );
+                            // meta_clone.metadata.insert(
+                            //     String::from("zkos_data"),
+                            //     Some(
+                            //         serde_json::to_string(
+                            //             &bincode::serialize(&ordertx.input).unwrap(),
+                            //         )
+                            //         .unwrap(),
+                            //     ),
+                            // );
 
                             let margin = order_request.initial_margin / 10000.0;
                             order_request.initial_margin = margin;
                             order_request.available_margin = margin;
-                            let data = RpcCommand::CreateTraderOrder(order_request, meta_clone);
+                            let data = RpcCommand::CreateTraderOrder(
+                                order_request,
+                                meta_clone,
+                                ordertx.input.encode_as_hex_string(),
+                            );
                             //call verifier to check balance, etc...
                             //if verified the call kafkacmd::send_to_kafka_queue
                             //also convert public key into hash fn and put it in account_id field
@@ -101,13 +109,6 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 response_clone,
                             ))
                             .unwrap())
-                            // Ok(Value::String(
-                            //     format!(
-                            //         "Order request submitted successfully. your id is: {:#?}",
-                            //         response_clone
-                            //     )
-                            //     .into(),
-                            // ))
                         }
                         Err(arg) => {
                             let err = JsonRpcError::invalid_params(format!(
@@ -173,20 +174,24 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             order_request.account_id = account_id.clone();
                             let response_clone = order_request.account_id.clone();
                             let mut meta_clone = meta.clone();
-                            meta_clone.metadata.insert(
-                                String::from("zkos_data"),
-                                Some(
-                                    serde_json::to_string(
-                                        &bincode::serialize(&ordertx.input).unwrap(),
-                                    )
-                                    .unwrap(),
-                                ),
-                            );
+                            // meta_clone.metadata.insert(
+                            //     String::from("zkos_data"),
+                            //     Some(
+                            //         serde_json::to_string(
+                            //             &bincode::serialize(&ordertx.input).unwrap(),
+                            //         )
+                            //         .unwrap(),
+                            //     ),
+                            // );
                             let deposit = order_request.deposit / 10000.0;
                             let balance = order_request.balance / 10000.0;
                             order_request.deposit = deposit;
                             order_request.balance = balance;
-                            let data = RpcCommand::CreateLendOrder(order_request, meta_clone);
+                            let data = RpcCommand::CreateLendOrder(
+                                order_request,
+                                meta_clone,
+                                ordertx.input.encode_as_hex_string(),
+                            );
                             kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
@@ -273,16 +278,20 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             settle_request.account_id = account_id.clone();
                             //
                             let mut meta_clone = meta.clone();
-                            meta_clone.metadata.insert(
-                                String::from("zkos_data"),
-                                Some(
-                                    serde_json::to_string(
-                                        &bincode::serialize(&ordertx.msg).unwrap(),
-                                    )
-                                    .unwrap(),
-                                ),
+                            // meta_clone.metadata.insert(
+                            //     String::from("zkos_data"),
+                            //     Some(
+                            //         serde_json::to_string(
+                            //             &bincode::serialize(&ordertx.msg).unwrap(),
+                            //         )
+                            //         .unwrap(),
+                            //     ),
+                            // );
+                            let data = RpcCommand::ExecuteTraderOrder(
+                                settle_request,
+                                meta_clone,
+                                ordertx.msg.encode_as_hex_string(),
                             );
-                            let data = RpcCommand::ExecuteTraderOrder(settle_request, meta_clone);
                             kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
@@ -364,16 +373,20 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             settle_request.account_id = account_id.clone();
                             //
                             let mut meta_clone = meta.clone();
-                            meta_clone.metadata.insert(
-                                String::from("zkos_data"),
-                                Some(
-                                    serde_json::to_string(
-                                        &bincode::serialize(&ordertx.msg).unwrap(),
-                                    )
-                                    .unwrap(),
-                                ),
+                            // meta_clone.metadata.insert(
+                            //     String::from("zkos_data"),
+                            //     Some(
+                            //         serde_json::to_string(
+                            //             &bincode::serialize(&ordertx.msg).unwrap(),
+                            //         )
+                            //         .unwrap(),
+                            //     ),
+                            // );
+                            let data = RpcCommand::ExecuteLendOrder(
+                                settle_request,
+                                meta_clone,
+                                ordertx.msg.encode_as_hex_string(),
                             );
-                            let data = RpcCommand::ExecuteLendOrder(settle_request, meta_clone);
                             kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
@@ -463,7 +476,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                     .unwrap(),
                                 ),
                             );
-                            let data = RpcCommand::CancelTraderOrder(cancel_request, meta_clone);
+                            let data = RpcCommand::CancelTraderOrder(
+                                cancel_request,
+                                meta_clone,
+                                ordertx.msg.encode_as_hex_string(),
+                            );
                             kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
