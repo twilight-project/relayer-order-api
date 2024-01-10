@@ -1,7 +1,7 @@
 // use crate::db::*;
 use crate::relayer::*;
 use serde_derive::{Deserialize, Serialize};
-pub type Zkos_Hex_String = String;
+pub type ZkosHexString = String;
 // use uuid::Uuid;
 
 // #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -18,10 +18,10 @@ pub type Zkos_Hex_String = String;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum RpcCommand {
-    CreateTraderOrder(CreateTraderOrder, Meta, Zkos_Hex_String),
-    CreateLendOrder(CreateLendOrder, Meta, Zkos_Hex_String),
-    ExecuteTraderOrder(ExecuteTraderOrder, Meta, Zkos_Hex_String),
-    ExecuteLendOrder(ExecuteLendOrder, Meta, Zkos_Hex_String),
-    CancelTraderOrder(CancelTraderOrder, Meta, Zkos_Hex_String),
+    CreateTraderOrder(CreateTraderOrder, Meta, ZkosHexString),
+    CreateLendOrder(CreateLendOrder, Meta, ZkosHexString),
+    ExecuteTraderOrder(ExecuteTraderOrder, Meta, ZkosHexString),
+    ExecuteLendOrder(ExecuteLendOrder, Meta, ZkosHexString),
+    CancelTraderOrder(CancelTraderOrder, Meta, ZkosHexString),
     RelayerCommandTraderOrderSettleOnLimit(TraderOrder, Meta, f64),
 }
