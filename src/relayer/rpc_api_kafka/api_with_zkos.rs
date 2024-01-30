@@ -86,7 +86,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             //     ),
                             // );
 
-                            let margin = order_request.initial_margin / 10000.0;
+                            let margin = order_request.initial_margin;
                             order_request.initial_margin = margin;
                             order_request.available_margin = margin;
                             let data = RpcCommand::CreateTraderOrder(
