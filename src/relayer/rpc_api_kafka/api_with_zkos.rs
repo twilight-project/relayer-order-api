@@ -183,8 +183,8 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             //         .unwrap(),
                             //     ),
                             // );
-                            let deposit = order_request.deposit / 10000.0;
-                            let balance = order_request.balance / 10000.0;
+                            let deposit = order_request.deposit ;
+                            let balance = order_request.balance ;
                             order_request.deposit = deposit;
                             order_request.balance = balance;
                             let data = RpcCommand::CreateLendOrder(
