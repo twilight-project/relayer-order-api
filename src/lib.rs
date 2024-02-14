@@ -15,6 +15,13 @@ mod test {
         let database_url = std::env::var("DATABASE_URL").expect("No database url found!");
         let relayer_db = RelayerDB::from_host(database_url);
         let mut pool = relayer_db.get_conn().unwrap();
-        TraderOrderDB::get_by_uuid(&mut *pool, "".to_string());
+        let data = TraderOrderDB::get_by_uuid(
+            &mut *pool,
+            "ada98370-730b-40d9-a239-482a54f24980".to_string(),
+        );
+        println!(
+            "data: {:?}",
+            serde_json::to_value(&data.unwrap()).expect("Error converting response")
+        );
     }
 }
