@@ -115,6 +115,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
+                            kafkacmd::send_to_kafka_queue_failed(
+                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                "CreateTraderOrderfailed",
+                            );
                             Err(err)
                         }
                     }
@@ -183,8 +188,8 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             //         .unwrap(),
                             //     ),
                             // );
-                            let deposit = order_request.deposit ;
-                            let balance = order_request.balance ;
+                            let deposit = order_request.deposit;
+                            let balance = order_request.balance;
                             order_request.deposit = deposit;
                             order_request.balance = balance;
                             let data = RpcCommand::CreateLendOrder(
@@ -215,6 +220,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
+                            kafkacmd::send_to_kafka_queue_failed(
+                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                "CreateLendOrderfailed",
+                            );
                             Err(err)
                         }
                     }
@@ -309,6 +319,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
+                            kafkacmd::send_to_kafka_queue_failed(
+                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                "ExecuteTraderOrderfailed",
+                            );
                             Err(err)
                         }
                     }
@@ -403,6 +418,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
+                            kafkacmd::send_to_kafka_queue_failed(
+                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                "ExecuteLendOrderfailed",
+                            );
                             Err(err)
                         }
                     }
@@ -498,6 +518,11 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
+                            kafkacmd::send_to_kafka_queue_failed(
+                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                "CancelTraderOrderfailed",
+                            );
                             Err(err)
                         }
                     }
