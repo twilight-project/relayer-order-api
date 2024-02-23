@@ -55,6 +55,18 @@ pub fn send_to_kafka_queue(cmd: RpcCommand, topic: String, key: &str) {
         .send(&Record::from_key_value(&topic, key, data))
         .unwrap();
 }
+pub fn send_to_kafka_queue_failed(cmd: String, topic: String, key: &str) {
+    let mut kafka_producer = KAFKA_PRODUCER.lock().unwrap();
+    let data = serde_json::to_vec(&cmd).unwrap();
+    // println!("my command:{:#?}", cmd);
+    // kafka_producer
+    //     .send(&Record::from_value(&topic, data))
+    //     .unwrap();
+    // let broker = std::env::var("BROKER").expect("missing environment variable BROKER");
+    kafka_producer
+        .send(&Record::from_key_value(&topic, key, data))
+        .unwrap();
+}
 
 pub fn receive_from_kafka_queue(
     topic: String,
