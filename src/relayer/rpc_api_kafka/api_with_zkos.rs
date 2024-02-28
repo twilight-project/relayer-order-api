@@ -74,24 +74,13 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             // order_request.account_id = account_id.clone();
                             order_request.account_id = account_id.clone();
                             let response_clone = order_request.account_id.clone();
-                            //
-                            let mut meta_clone = meta.clone();
-                            // meta_clone.metadata.insert(
-                            //     String::from("zkos_data"),
-                            //     Some(
-                            //         serde_json::to_string(
-                            //             &bincode::serialize(&ordertx.input).unwrap(),
-                            //         )
-                            //         .unwrap(),
-                            //     ),
-                            // );
 
                             let margin = order_request.initial_margin;
                             order_request.initial_margin = margin;
                             order_request.available_margin = margin;
                             let data = RpcCommand::CreateTraderOrder(
                                 order_request,
-                                meta_clone,
+                                meta,
                                 ordertx.input.encode_as_hex_string(),
                             );
                             //call verifier to check balance, etc...
@@ -178,23 +167,14 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let account_id = ordertx.input.input.as_owner_address().unwrap();
                             order_request.account_id = account_id.clone();
                             let response_clone = order_request.account_id.clone();
-                            let mut meta_clone = meta.clone();
-                            // meta_clone.metadata.insert(
-                            //     String::from("zkos_data"),
-                            //     Some(
-                            //         serde_json::to_string(
-                            //             &bincode::serialize(&ordertx.input).unwrap(),
-                            //         )
-                            //         .unwrap(),
-                            //     ),
-                            // );
+
                             let deposit = order_request.deposit;
                             let balance = order_request.balance;
                             order_request.deposit = deposit;
                             order_request.balance = balance;
                             let data = RpcCommand::CreateLendOrder(
                                 order_request,
-                                meta_clone,
+                                meta,
                                 ordertx.input.encode_as_hex_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
@@ -275,59 +255,45 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(ordertx) => {
-                    match verify_settle_requests(&ordertx.msg) {
-                        Ok(_) => {
-                            let mut settle_request = ordertx.execute_trader_order.clone();
-                            let account_id =
-                                match ordertx.msg.output.as_output_data().get_owner_address() {
-                                    Some(address) => address.clone(),
-                                    None => "".to_string(),
-                                };
+                Ok(ordertx) => match verify_settle_requests(&ordertx.msg) {
+                    Ok(_) => {
+                        let mut settle_request = ordertx.execute_trader_order.clone();
+                        let account_id =
+                            match ordertx.msg.output.as_output_data().get_owner_address() {
+                                Some(address) => address.clone(),
+                                None => "".to_string(),
+                            };
 
-                            settle_request.account_id = account_id.clone();
-                            //
-                            let mut meta_clone = meta.clone();
-                            // meta_clone.metadata.insert(
-                            //     String::from("zkos_data"),
-                            //     Some(
-                            //         serde_json::to_string(
-                            //             &bincode::serialize(&ordertx.msg).unwrap(),
-                            //         )
-                            //         .unwrap(),
-                            //     ),
-                            // );
-                            let data = RpcCommand::ExecuteTraderOrder(
-                                settle_request,
-                                meta_clone,
-                                ordertx.msg.encode_as_hex_string(),
-                            );
-                            kafkacmd::send_to_kafka_queue(
-                                data,
-                                String::from("CLIENT-REQUEST"),
-                                "ExecuteTraderOrder",
-                            );
+                        settle_request.account_id = account_id.clone();
 
-                            Ok(serde_json::to_value(&RequestResponse::new(
-                                "Execution request submitted successfully".to_string(),
-                                account_id.clone(),
-                            ))
-                            .unwrap())
-                        }
-                        Err(arg) => {
-                            let err = JsonRpcError::invalid_params(format!(
-                                "Invalid parameters, {:?}",
-                                arg
-                            ));
-                            kafkacmd::send_to_kafka_queue_failed(
-                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
-                                String::from("CLIENT-FAILED-REQUEST"),
-                                "ExecuteTraderOrderfailed",
-                            );
-                            Err(err)
-                        }
+                        let data = RpcCommand::ExecuteTraderOrder(
+                            settle_request,
+                            meta,
+                            ordertx.msg.encode_as_hex_string(),
+                        );
+                        kafkacmd::send_to_kafka_queue(
+                            data,
+                            String::from("CLIENT-REQUEST"),
+                            "ExecuteTraderOrder",
+                        );
+
+                        Ok(serde_json::to_value(&RequestResponse::new(
+                            "Execution request submitted successfully".to_string(),
+                            account_id.clone(),
+                        ))
+                        .unwrap())
                     }
-                }
+                    Err(arg) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", arg));
+                        kafkacmd::send_to_kafka_queue_failed(
+                            hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            String::from("CLIENT-FAILED-REQUEST"),
+                            "ExecuteTraderOrderfailed",
+                        );
+                        Err(err)
+                    }
+                },
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
@@ -386,20 +352,10 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                                     None => "".to_string(),
                                 };
                             settle_request.account_id = account_id.clone();
-                            //
-                            let mut meta_clone = meta.clone();
-                            // meta_clone.metadata.insert(
-                            //     String::from("zkos_data"),
-                            //     Some(
-                            //         serde_json::to_string(
-                            //             &bincode::serialize(&ordertx.msg).unwrap(),
-                            //         )
-                            //         .unwrap(),
-                            //     ),
-                            // );
+
                             let data = RpcCommand::ExecuteLendOrder(
                                 settle_request,
-                                meta_clone,
+                                meta,
                                 ordertx.msg.encode_as_hex_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
@@ -485,20 +441,10 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let account_id = ordertx.msg.public_key.clone();
                             // cancel_request.account_id = hex::encode(account_id.as_bytes());
                             cancel_request.account_id = account_id.clone();
-                            //
-                            let mut meta_clone = meta.clone();
-                            meta_clone.metadata.insert(
-                                String::from("zkos_data"),
-                                Some(
-                                    serde_json::to_string(
-                                        &bincode::serialize(&ordertx.msg).unwrap(),
-                                    )
-                                    .unwrap(),
-                                ),
-                            );
+
                             let data = RpcCommand::CancelTraderOrder(
                                 cancel_request,
-                                meta_clone,
+                                meta,
                                 ordertx.msg.encode_as_hex_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
