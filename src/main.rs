@@ -14,8 +14,14 @@ fn main() {
         .name(String::from("kafka_queue_rpc_server"))
         .spawn(move || {
             kafka_queue_rpc_server_with_zkos();
-            // kafka_queue_rpc_server();
+        })
+        .unwrap();
+    let handle_test = thread::Builder::new()
+        .name(String::from("kafka_queue_rpc_server_with_zkos_test"))
+        .spawn(move || {
+            kafka_queue_rpc_server_with_zkos_test();
         })
         .unwrap();
     handle.join().unwrap();
+    handle_test.join().unwrap();
 }
