@@ -13,7 +13,10 @@ use std::{thread, time};
 lazy_static! {
     pub static ref KAFKA_PRODUCER: Mutex<Producer> = {
         dotenv::dotenv().expect("Failed loading dotenv");
-        let broker = std::env::var("BROKER").expect("missing environment variable BROKER");
+        let broker = match std::env::var("BROKER") {
+            Ok(broker_address) => broker_address,
+            Err(_) => "localhost:9092".to_string(),
+        };
         let producer = Producer::from_hosts(vec![broker.to_owned()])
             .with_ack_timeout(Duration::from_secs(1))
             .with_required_acks(RequiredAcks::One)
@@ -23,13 +26,16 @@ lazy_static! {
     };
     pub static ref KAFKA_CLIENT: Mutex<KafkaClient> = {
         dotenv::dotenv().expect("Failed loading dotenv");
-        let broker = std::env::var("BROKER").expect("missing environment variable BROKER");
+        let broker = match std::env::var("BROKER") {
+            Ok(broker_address) => broker_address,
+            Err(_) => "localhost:9092".to_string(),
+        };
         Mutex::new(KafkaClient::new(vec![broker.to_owned()]))
     };
 }
 
 pub fn check_kafka_topics() -> Vec<String> {
-    dotenv::dotenv().expect("Failed loading dotenv");
+    dotenv::dotenv().ok();
     // kafkalib::kafka_topic::kafka_new_topic("CLIENT-REQUEST");
     let mut kafka_client = KAFKA_CLIENT.lock().unwrap();
     kafka_client.load_metadata_all().unwrap();
@@ -46,11 +52,7 @@ pub fn check_kafka_topics() -> Vec<String> {
 pub fn send_to_kafka_queue(cmd: RpcCommand, topic: String, key: &str) {
     let mut kafka_producer = KAFKA_PRODUCER.lock().unwrap();
     let data = serde_json::to_vec(&cmd).unwrap();
-    // println!("my command:{:#?}", cmd);
-    // kafka_producer
-    //     .send(&Record::from_value(&topic, data))
-    //     .unwrap();
-    // let broker = std::env::var("BROKER").expect("missing environment variable BROKER");
+
     kafka_producer
         .send(&Record::from_key_value(&topic, key, data))
         .unwrap();
@@ -58,11 +60,6 @@ pub fn send_to_kafka_queue(cmd: RpcCommand, topic: String, key: &str) {
 pub fn send_to_kafka_queue_failed(cmd: String, topic: String, key: &str) {
     let mut kafka_producer = KAFKA_PRODUCER.lock().unwrap();
     let data = serde_json::to_vec(&cmd).unwrap();
-    // println!("my command:{:#?}", cmd);
-    // kafka_producer
-    //     .send(&Record::from_value(&topic, data))
-    //     .unwrap();
-    // let broker = std::env::var("BROKER").expect("missing environment variable BROKER");
     kafka_producer
         .send(&Record::from_key_value(&topic, key, data))
         .unwrap();

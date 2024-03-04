@@ -1,5 +1,3 @@
-// mod api;
-// pub use self::api::*;
 mod api_with_zkos;
 mod api_with_zkos_direct_for_test;
 pub use self::api_with_zkos::*;
