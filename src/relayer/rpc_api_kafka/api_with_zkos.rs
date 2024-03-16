@@ -30,7 +30,7 @@ pub fn kafka_queue_rpc_server_with_zkos() {
     io.add_method_with_meta(
         "CreateTraderOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<CreateTraderOrderZkos, jsonrpc_core::Error>;
+            let request: Result<CreateTraderOrderClientZkos, jsonrpc_core::Error>;
             // match params.parse::<String>()
             request = match params.parse::<ByteRec>() {
                 Ok(hex_data) => {
@@ -64,24 +64,23 @@ pub fn kafka_queue_rpc_server_with_zkos() {
 
             match request {
                 Ok(ordertx) => {
-                    match verify_trade_lend_order(&ordertx.input) {
+                    match verify_client_create_trader_order(&ordertx.tx) {
                         Ok(_) => {
                             let mut order_request = ordertx.create_trader_order.clone();
 
-                            let account_id =
-                        //ordertx.input.input.input.as_owner_address().unwrap();
-                        ordertx.input.input.as_owner_address().unwrap();
-                            // order_request.account_id = account_id.clone();
-                            order_request.account_id = account_id.clone();
+                            //     let account_id =
+                            // //ordertx.input.input.input.as_owner_address().unwrap();
+                            // ordertx.input.input.as_owner_address().unwrap();
+                            //     // order_request.account_id = account_id.clone();
+                            //     order_request.account_id = account_id.clone();
                             let response_clone = order_request.account_id.clone();
 
                             let margin = order_request.initial_margin;
-                            order_request.initial_margin = margin;
                             order_request.available_margin = margin;
                             let data = RpcCommand::CreateTraderOrder(
                                 order_request,
                                 meta,
-                                ordertx.input.encode_as_hex_string(),
+                                hex::encode(bincode::serialize(&ordertx.tx).unwrap()),
                             );
                             //call verifier to check balance, etc...
                             //if verified the call kafkacmd::send_to_kafka_queue
