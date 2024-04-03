@@ -62,6 +62,7 @@ pub fn kafka_queue_rpc_server_with_zkos_test() {
                                 order_request,
                                 meta,
                                 ordertx.input.encode_as_hex_string(),
+                                "".to_string(),
                             );
                             //call verifier to check balance, etc...
                             //if verified the call kafkacmd::send_to_kafka_queue
@@ -149,6 +150,7 @@ pub fn kafka_queue_rpc_server_with_zkos_test() {
                                 order_request,
                                 meta,
                                 ordertx.input.encode_as_hex_string(),
+                                "".to_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
                                 data,
@@ -236,6 +238,7 @@ pub fn kafka_queue_rpc_server_with_zkos_test() {
                             settle_request,
                             meta,
                             ordertx.msg.encode_as_hex_string(),
+                            "".to_string(),
                         );
                         kafkacmd::send_to_kafka_queue(
                             data,
@@ -316,6 +319,7 @@ pub fn kafka_queue_rpc_server_with_zkos_test() {
                                 settle_request,
                                 meta,
                                 ordertx.msg.encode_as_hex_string(),
+                                "".to_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
                                 data,
@@ -399,6 +403,7 @@ pub fn kafka_queue_rpc_server_with_zkos_test() {
                                 cancel_request,
                                 meta,
                                 ordertx.msg.encode_as_hex_string(),
+                                "".to_string(),
                             );
                             kafkacmd::send_to_kafka_queue(
                                 data,
