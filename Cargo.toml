@@ -39,10 +39,10 @@ git = "ssh://github.com/twilight-project/ZkOS.git"
 branch = "develop"
 [dependencies.zkos-relayer-wallet]
 git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
-branch = "clienttradeorder"
+branch = "develop-rpc"
 [dependencies.zkos-client-wallet]
 git = "ssh://github.com/twilight-project/zkos-client-wallet.git"
-branch = "clienttradeorder"
+branch = "develop-rpc"
 
 
 # [dependencies.transaction]
