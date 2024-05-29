@@ -24,25 +24,25 @@ hex = "*"
 bincode = "1"
 
 [dependencies.transaction]
-git = "ssh://github.com/twilight-project/ZkOS.git"
+git = "ssh://github.com/twilight-project/zkos-rust.git"
 branch = "develop"
 [dependencies.quisquis-rust]
 git = "ssh://github.com/twilight-project/quisquis-rust.git"
 branch = "develop"
 [dependencies.zkvm]
-git = "ssh://github.com/twilight-project/ZkOS.git"
+git = "ssh://github.com/twilight-project/zkos-rust.git"
 branch = "develop"
 [dependencies.zkschnorr]
 git = "ssh://github.com/twilight-project/ZkSchnorr.git"
 [dependencies.address]
-git = "ssh://github.com/twilight-project/ZkOS.git"
+git = "ssh://github.com/twilight-project/zkos-rust.git"
 branch = "develop"
 [dependencies.zkos-relayer-wallet]
 git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
-branch = "clienttradeorder"
+branch = "develop-rust"
 [dependencies.zkos-client-wallet]
 git = "ssh://github.com/twilight-project/zkos-client-wallet.git"
-branch = "clienttradeorder"
+branch = "develop-rust"
 
 
 # [dependencies.transaction]
