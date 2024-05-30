@@ -25,18 +25,18 @@ bincode = "1"
 
 [dependencies.transaction]
 git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
+branch = "updated-rpc"
 [dependencies.quisquis-rust]
 git = "ssh://github.com/twilight-project/quisquis-rust.git"
 branch = "develop"
 [dependencies.zkvm]
 git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
+branch = "updated-rpc"
 [dependencies.zkschnorr]
-git = "ssh://github.com/twilight-project/ZkSchnorr.git"
+git = "ssh://github.com/twilight-project/zk-schnorr.git"
 [dependencies.address]
 git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
+branch = "updated-rpc"
 [dependencies.zkos-relayer-wallet]
 git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
 branch = "develop-rust"
