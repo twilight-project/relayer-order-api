@@ -81,23 +81,36 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let response_id = response.get_id();
                             let margin = order_request.initial_margin;
                             order_request.available_margin = margin;
-                            let data = RpcCommand::CreateTraderOrder(
-                                order_request,
-                                meta,
-                                hex::encode(bincode::serialize(&ordertx.tx).unwrap()),
-                                response_id,
-                            );
-                            //call verifier to check balance, etc...
-                            //if verified the call kafkacmd::send_to_kafka_queue
-                            //also convert public key into hash fn and put it in account_id field
-                            kafkacmd::send_to_kafka_queue(
-                                data.clone(),
-                                String::from("CLIENT-REQUEST"),
-                                "CreateTraderOrder",
-                            );
-                            println!("orderdata : {:?}", data);
+                            if order_request.initial_margin > 0.0 {
+                                let data = RpcCommand::CreateTraderOrder(
+                                    order_request,
+                                    meta,
+                                    hex::encode(bincode::serialize(&ordertx.tx).unwrap()),
+                                    response_id,
+                                );
+                                //call verifier to check balance, etc...
+                                //if verified the call kafkacmd::send_to_kafka_queue
+                                //also convert public key into hash fn and put it in account_id field
+                                kafkacmd::send_to_kafka_queue(
+                                    data.clone(),
+                                    String::from("CLIENT-REQUEST"),
+                                    "CreateTraderOrder",
+                                );
+                                println!("orderdata : {:?}", data);
 
-                            Ok(serde_json::to_value(&response).unwrap())
+                                Ok(serde_json::to_value(&response).unwrap())
+                            } else {
+                                let err = JsonRpcError::invalid_params(format!(
+                                    "Invalid parameters, {:?}",
+                                    "invalid initial margin".to_string()
+                                ));
+                                kafkacmd::send_to_kafka_queue_failed(
+                                    hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                    String::from("CLIENT-FAILED-REQUEST"),
+                                    "CreateTraderOrderfailed",
+                                );
+                                Err(err)
+                            }
                         }
                         Err(arg) => {
                             let err = JsonRpcError::invalid_params(format!(
@@ -175,25 +188,38 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let balance = order_request.balance;
                             order_request.deposit = deposit;
                             order_request.balance = balance;
-                            let data = RpcCommand::CreateLendOrder(
-                                order_request,
-                                meta,
-                                ordertx.input.encode_as_hex_string(),
-                                response_id,
-                            );
-                            kafkacmd::send_to_kafka_queue(
-                                data,
-                                String::from("CLIENT-REQUEST"),
-                                &format!(
-                                    "CreateLendOrder-{}",
-                                    std::time::SystemTime::now()
-                                        .duration_since(SystemTime::UNIX_EPOCH)
-                                        .unwrap()
-                                        .as_micros()
-                                        .to_string()
-                                ),
-                            );
-                            Ok(serde_json::to_value(&response).unwrap())
+                            if order_request.deposit > 0.0 {
+                                let data = RpcCommand::CreateLendOrder(
+                                    order_request,
+                                    meta,
+                                    ordertx.input.encode_as_hex_string(),
+                                    response_id,
+                                );
+                                kafkacmd::send_to_kafka_queue(
+                                    data,
+                                    String::from("CLIENT-REQUEST"),
+                                    &format!(
+                                        "CreateLendOrder-{}",
+                                        std::time::SystemTime::now()
+                                            .duration_since(SystemTime::UNIX_EPOCH)
+                                            .unwrap()
+                                            .as_micros()
+                                            .to_string()
+                                    ),
+                                );
+                                Ok(serde_json::to_value(&response).unwrap())
+                            } else {
+                                let err = JsonRpcError::invalid_params(format!(
+                                    "Invalid parameters, {:?}",
+                                    "Invalid deposit amount"
+                                ));
+                                kafkacmd::send_to_kafka_queue_failed(
+                                    hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                    String::from("CLIENT-FAILED-REQUEST"),
+                                    "CreateLendOrderfailed",
+                                );
+                                Err(err)
+                            }
                         }
                         Err(arg) => {
                             let err = JsonRpcError::invalid_params(format!(
