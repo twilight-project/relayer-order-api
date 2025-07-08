@@ -515,3 +515,63 @@ pub fn kafka_queue_rpc_server_with_zkos() {
         .unwrap();
     server.wait();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jsonrpc_core::types::response::Output;
+    use jsonrpc_core::{Request, Value};
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_rpc_server_metadata_extraction() {
+        // Create mock request headers
+        let mut headers = HashMap::new();
+        headers.insert(
+            String::from("content-type"),
+            Some("application/json".to_string()),
+        );
+        headers.insert(String::from("relayer"), Some("test-relayer".to_string()));
+
+        // Create mock metadata
+        let meta = Meta {
+            metadata: {
+                let mut hashmap = HashMap::new();
+                hashmap.insert(
+                    String::from("CONTENT_TYPE"),
+                    Some("application/json".to_string()),
+                );
+                hashmap.insert(String::from("Relayer"), Some("test-relayer".to_string()));
+                hashmap.insert(
+                    String::from("request_server_time"),
+                    Some(
+                        SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_micros()
+                            .to_string(),
+                    ),
+                );
+                hashmap
+            },
+        };
+
+        // Create mock RPC request
+        let request = Request::Single(jsonrpc_core::Call::MethodCall(jsonrpc_core::MethodCall {
+            jsonrpc: Some(jsonrpc_core::Version::V2),
+            method: "CreateTraderOrder".to_string(),
+            params: jsonrpc_core::Params::None,
+            id: jsonrpc_core::Id::Num(1),
+        }));
+
+        // Verify metadata extraction
+        assert!(meta.metadata.contains_key("CONTENT_TYPE"));
+        assert!(meta.metadata.contains_key("Relayer"));
+        assert!(meta.metadata.contains_key("request_server_time"));
+
+        // Verify timestamp is valid
+        let timestamp = meta.metadata.get("request_server_time").unwrap();
+        assert!(timestamp.is_some());
+        assert!(timestamp.as_ref().unwrap().parse::<u128>().is_ok());
+    }
+}

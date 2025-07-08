@@ -2,6 +2,13 @@
 name = "order-api"
 version = "0.1.0"
 edition = "2021"
+authors = ["Twilight Project"]
+description = "A high-throughput JSON-RPC service for submitting, updating, and managing orders on the Twilight Relayer Core"
+license = "Apache-2.0"
+repository = "https://github.com/twilight-project/relayer-order-api"
+readme = "README.md"
+keywords = ["relayer", "order-api", "json-rpc", "twilight", "kafka"]
+categories = ["web-programming", "api-bindings", "cryptography"]
 
 [[bin]]
 name = "main"
