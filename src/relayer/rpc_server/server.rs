@@ -21,6 +21,9 @@ pub fn rpc_server() {
     let mut io = MetaIoHandler::default();
 
     // CreateTraderOrder
+    // Handles the creation of new trader orders (market and limit orders)
+    // Validates order parameters including initial margin and leverage constraints
+    // Verifies zero-knowledge proofs and processes the order through Kafka queue
     io.add_method_with_meta(
         "CreateTraderOrder",
         move |params: Params, meta: Meta| async move {
@@ -129,6 +132,9 @@ pub fn rpc_server() {
     );
 
     // CreateLendOrder
+    // Handles the creation of new lending orders for liquidity provision
+    // Validates deposit amounts and processes lend order submissions
+    // Verifies trade lend order proofs and queues for processing
     io.add_method_with_meta(
         "CreateLendOrder",
         move |params: Params, meta: Meta| async move {
@@ -228,6 +234,9 @@ pub fn rpc_server() {
     );
 
     // ExecuteTraderOrder
+    // Handles the execution/settlement of existing trader orders
+    // Processes order settlements and validates settlement requests
+    // Verifies settlement proofs and coordinates order execution
     io.add_method_with_meta(
         "ExecuteTraderOrder",
         move |params: Params, meta: Meta| async move {
@@ -305,6 +314,9 @@ pub fn rpc_server() {
     );
 
     // ExecuteLendOrder
+    // Handles the execution/settlement of existing lending orders
+    // Processes lend order settlements and validates settlement requests
+    // Manages lending order execution and settlement coordination
     io.add_method_with_meta(
         "ExecuteLendOrder",
         move |params: Params, meta: Meta| async move {
@@ -391,6 +403,9 @@ pub fn rpc_server() {
     );
 
     // CancelTraderOrder
+    // Handles the cancellation of existing trader orders
+    // Validates cancellation requests and processes order cancellations
+    // Verifies query order proofs and manages order state transitions
     io.add_method_with_meta(
         "CancelTraderOrder",
         move |params: Params, meta: Meta| async move {
