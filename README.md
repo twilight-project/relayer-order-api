@@ -155,7 +155,9 @@ src/
 └── relayer/             # Core relayer order API functionality
     ├── mod.rs
     ├── commands.rs
-    └── rpc_api_kafka/
+    └── rpc_server/
+        ├── mod.rs
+        └── server.rs
 ```
 
 ### Dependencies

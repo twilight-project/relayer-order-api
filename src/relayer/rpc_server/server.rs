@@ -17,7 +17,7 @@ pub struct Meta {
 }
 impl Metadata for Meta {}
 
-pub fn kafka_queue_rpc_server_with_zkos() {
+pub fn rpc_server() {
     let mut io = MetaIoHandler::default();
 
     // CreateTraderOrder
