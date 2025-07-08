@@ -21,8 +21,8 @@ lazy_static! {
     pub static ref RPC_SERVER_THREAD: usize = match std::env::var("RPC_SERVER_THREAD") {
         Ok(thread_count) => match thread_count.parse::<usize>() {
             Ok(thread_count_value) => thread_count_value,
-            Err(_) => 2,
+            Err(_) => 5,
         },
-        Err(_) => 2,
+        Err(_) => 5,
     };
 }

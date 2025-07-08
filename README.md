@@ -40,9 +40,6 @@ Configure the following environment variables in your `.env` file:
 #### Required Variables
 
 ```env
-# Relayer version identifier (REQUIRED)
-RelayerVersion=1.0.0
-
 # Kafka broker address for message queue operations (REQUIRED)
 BROKER=localhost:9092
 ```
@@ -50,8 +47,11 @@ BROKER=localhost:9092
 #### Optional Variables (with defaults)
 
 ```env
-# Snapshot version for the system (default: 1.000)
-SnapshotVersion=1.000
+# Relayer version identifier (default: 0.1.0)
+RelayerVersion=0.1.0
+
+# Snapshot version for the system (default: 0.1.0)
+SnapshotVersion=0.1.0
 
 # RPC queue mode operation setting (default: DIRECT)
 RPC_QUEUE_MODE=DIRECT
@@ -59,11 +59,8 @@ RPC_QUEUE_MODE=DIRECT
 # RPC server socket address and port (default: 0.0.0.0:3032)
 RPC_SERVER_SOCKETADDR=0.0.0.0:3032
 
-# RPC server socket address for test direct mode (default: 0.0.0.0:3033)
-RPC_SERVER_SOCKETADDR_TEST_DIRECT=0.0.0.0:3033
-
-# Number of RPC server threads (default: 2)
-RPC_SERVER_THREAD=2
+# Number of RPC server threads (default: 5)
+RPC_SERVER_THREAD=5
 ```
 
 ## Building and Running
@@ -141,7 +138,7 @@ The application uses the following Kafka topics:
 ### Server Configuration
 
 - **Default Port**: 3032
-- **Default Thread Count**: 2
+- **Default Thread Count**: 5
 
 ## Development
 
