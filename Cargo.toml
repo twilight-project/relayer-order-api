@@ -1,5 +1,5 @@
 [package]
-name = "rpckafka"
+name = "order-api"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,6 @@ path = "src/main.rs"
 serde = "1.0.131"
 serde_derive = "1.0.131"
 serde_json = "1.0.68"
-# uuid = { version = "0.8.2", features = ["v4", "serde"] } #https://github.com/serde-rs/serde/issues/324
 uuid = { version = "1.6.1", features = ["v4", "serde"] }
 dotenv = "0.15.0"
 serde_with = { version = "1.4.0", features = ["json"] }
@@ -21,41 +20,22 @@ jsonrpc = "0.12.1"
 jsonrpc-http-server = "18.0"
 jsonrpc-core = "18.0.0"
 hex = "*"
-bincode = "1"
+bincode = "1.3.3"
 
 [dependencies.transaction]
-git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "updated-rpc"
+git = "https://github.com/twilight-project/zkos-rust.git"
+branch = "develop"
 [dependencies.quisquis-rust]
-git = "ssh://github.com/twilight-project/quisquis-rust.git"
+git = "https://github.com/twilight-project/quisquis-rust.git"
 branch = "develop"
 [dependencies.zkvm]
-git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "updated-rpc"
+git = "https://github.com/twilight-project/zkos-rust.git"
+branch = "develop"
 [dependencies.zkschnorr]
-git = "ssh://github.com/twilight-project/zk-schnorr.git"
+git = "https://github.com/twilight-project/zk-schnorr.git"
 [dependencies.address]
-git = "ssh://github.com/twilight-project/zkos-rust.git"
-branch = "updated-rpc"
-[dependencies.zkos-relayer-wallet]
-git = "ssh://github.com/twilight-project/zkos-relayer-wallet.git"
-branch = "develop-rust"
-[dependencies.zkos-client-wallet]
-git = "ssh://github.com/twilight-project/zkos-client-wallet.git"
-branch = "develop-rust"
-
-
-# [dependencies.transaction]
-# path = "../../ZkOS/transaction"
-# [dependencies.quisquis-rust]
-# path = "../../quisquis-rust"
-# [dependencies.zkvm]
-# path = "../../ZkOS/zkvm"
-# [dependencies.zkschnorr]
-# path = "../../ZkSchnorr"
-# [dependencies.address]
-# path = "../../ZkOS/address"
-# [dependencies.zkos-relayer-wallet]
-# path = "../../zkos-relayer-wallet"
-# [dependencies.zkos-client-wallet]
-# path = "../../zkos-client-wallet"
+git = "https://github.com/twilight-project/zkos-rust.git"
+branch = "develop"
+[dependencies.twilight-relayer-sdk]
+git = "https://github.com/twilight-project/twilight-relayer-sdk.git"
+branch = "develop"

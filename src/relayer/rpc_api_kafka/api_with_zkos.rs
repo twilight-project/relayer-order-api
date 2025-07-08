@@ -1,6 +1,5 @@
 use crate::config::*;
 use crate::kafkalib::kafkacmd;
-// use crate::relayer::RpcCommand;
 use crate::relayer::*;
 use jsonrpc_core::types::error::Error as JsonRpcError;
 use jsonrpc_http_server::{
@@ -8,22 +7,17 @@ use jsonrpc_http_server::{
     jsonrpc_core::{MetaIoHandler, Metadata, Params},
     ServerBuilder,
 };
-use relayerwalletlib::verify_client_message::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::SystemTime;
+use twilight_relayer_sdk::verify_client_message::*;
 #[derive(Default, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Meta {
     pub metadata: HashMap<String, Option<String>>,
 }
 impl Metadata for Meta {}
-// #[derive(Default, Clone, Debug, Deserialize, Serialize, PartialEq)]
-// pub struct Meta {
-//     pub metadata: HashMap<String, Option<String>>,
-// }
-// impl Metadata for Meta {}
+
 pub fn kafka_queue_rpc_server_with_zkos() {
-    // let mut io = IoHandler::default();
     let mut io = MetaIoHandler::default();
 
     // CreateTraderOrder
@@ -33,19 +27,9 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             let request: Result<CreateTraderOrderClientZkos, jsonrpc_core::Error>;
             // match params.parse::<String>()
             request = match params.parse::<ByteRec>() {
-                Ok(hex_data) => {
-                    match hex::decode(hex_data.data) {
-                        Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
-                            Ok(ordertx) => Ok(ordertx),
-                            Err(args) => {
-                                let err = JsonRpcError::invalid_params(format!(
-                                    "Invalid parameters, {:?}",
-                                    args
-                                ));
-                                Err(err)
-                            }
-                        },
-                        // Ok(hex_data) => Ok(hex_data),
+                Ok(hex_data) => match hex::decode(hex_data.data) {
+                    Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                        Ok(ordertx) => Ok(ordertx),
                         Err(args) => {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
@@ -53,8 +37,13 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             ));
                             Err(err)
                         }
+                    },
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
                     }
-                }
+                },
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
@@ -68,11 +57,6 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                         Ok(_) => {
                             let mut order_request = ordertx.create_trader_order.clone();
 
-                            //     let account_id =
-                            // //ordertx.input.input.input.as_owner_address().unwrap();
-                            // ordertx.input.input.as_owner_address().unwrap();
-                            //     // order_request.account_id = account_id.clone();
-                            //     order_request.account_id = account_id.clone();
                             let response_clone = order_request.account_id.clone();
                             let response = RequestResponse::new(
                                 "Order request submitted successfully".to_string(),
@@ -81,7 +65,8 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             let response_id = response.get_id();
                             let margin = order_request.initial_margin;
                             order_request.available_margin = margin;
-                            if order_request.initial_margin > 0.0 {
+                            if order_request.initial_margin > 0.0 && order_request.leverage <= 50.0
+                            {
                                 let data = RpcCommand::CreateTraderOrder(
                                     order_request,
                                     meta,
@@ -100,10 +85,18 @@ pub fn kafka_queue_rpc_server_with_zkos() {
 
                                 Ok(serde_json::to_value(&response).unwrap())
                             } else {
-                                let err = JsonRpcError::invalid_params(format!(
-                                    "Invalid parameters, {:?}",
-                                    "invalid initial margin".to_string()
-                                ));
+                                let err;
+                                if order_request.initial_margin <= 0.0 {
+                                    err = JsonRpcError::invalid_params(format!(
+                                        "Invalid initial margin:{:?}, should be greater than 0",
+                                        order_request.initial_margin
+                                    ));
+                                } else {
+                                    err = JsonRpcError::invalid_params(format!(
+                                        "Invalid leverage:{:?}, should be less than or equal to 50",
+                                        order_request.leverage
+                                    ));
+                                }
                                 kafkacmd::send_to_kafka_queue_failed(
                                     hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
                                     String::from("CLIENT-FAILED-REQUEST"),
@@ -142,19 +135,9 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             let request: Result<CreateLendOrderZkos, jsonrpc_core::Error>;
             // match params.parse::<String>()
             request = match params.parse::<ByteRec>() {
-                Ok(hex_data) => {
-                    match hex::decode(hex_data.data) {
-                        Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
-                            Ok(ordertx) => Ok(ordertx),
-                            Err(args) => {
-                                let err = JsonRpcError::invalid_params(format!(
-                                    "Invalid parameters, {:?}",
-                                    args
-                                ));
-                                Err(err)
-                            }
-                        },
-                        // Ok(hex_data) => Ok(hex_data),
+                Ok(hex_data) => match hex::decode(hex_data.data) {
+                    Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                        Ok(ordertx) => Ok(ordertx),
                         Err(args) => {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
@@ -162,8 +145,13 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             ));
                             Err(err)
                         }
+                    },
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
                     }
-                }
+                },
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
@@ -172,59 +160,44 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             };
 
             match request {
-                Ok(ordertx) => {
-                    match verify_trade_lend_order(&ordertx.input) {
-                        Ok(_) => {
-                            //to get public key from data
-                            let mut order_request = ordertx.create_lend_order.clone();
+                Ok(ordertx) => match verify_trade_lend_order(&ordertx.input) {
+                    Ok(_) => {
+                        let mut order_request = ordertx.create_lend_order.clone();
 
-                            let response_clone = order_request.account_id.clone();
-                            let response = RequestResponse::new(
-                                "Order request submitted successfully".to_string(),
-                                response_clone,
+                        let response_clone = order_request.account_id.clone();
+                        let response = RequestResponse::new(
+                            "Order request submitted successfully".to_string(),
+                            response_clone,
+                        );
+                        let response_id = response.get_id();
+                        let deposit = order_request.deposit;
+                        let balance = order_request.balance;
+                        order_request.deposit = deposit;
+                        order_request.balance = balance;
+                        if order_request.deposit > 0.0 {
+                            let data = RpcCommand::CreateLendOrder(
+                                order_request,
+                                meta,
+                                ordertx.input.encode_as_hex_string(),
+                                response_id,
                             );
-                            let response_id = response.get_id();
-                            let deposit = order_request.deposit;
-                            let balance = order_request.balance;
-                            order_request.deposit = deposit;
-                            order_request.balance = balance;
-                            if order_request.deposit > 0.0 {
-                                let data = RpcCommand::CreateLendOrder(
-                                    order_request,
-                                    meta,
-                                    ordertx.input.encode_as_hex_string(),
-                                    response_id,
-                                );
-                                kafkacmd::send_to_kafka_queue(
-                                    data,
-                                    String::from("CLIENT-REQUEST"),
-                                    &format!(
-                                        "CreateLendOrder-{}",
-                                        std::time::SystemTime::now()
-                                            .duration_since(SystemTime::UNIX_EPOCH)
-                                            .unwrap()
-                                            .as_micros()
-                                            .to_string()
-                                    ),
-                                );
-                                Ok(serde_json::to_value(&response).unwrap())
-                            } else {
-                                let err = JsonRpcError::invalid_params(format!(
-                                    "Invalid parameters, {:?}",
-                                    "Invalid deposit amount"
-                                ));
-                                kafkacmd::send_to_kafka_queue_failed(
-                                    hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
-                                    String::from("CLIENT-FAILED-REQUEST"),
-                                    "CreateLendOrderfailed",
-                                );
-                                Err(err)
-                            }
-                        }
-                        Err(arg) => {
+                            kafkacmd::send_to_kafka_queue(
+                                data,
+                                String::from("CLIENT-REQUEST"),
+                                &format!(
+                                    "CreateLendOrder-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
+                            );
+                            Ok(serde_json::to_value(&response).unwrap())
+                        } else {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
-                                arg
+                                "Invalid deposit amount"
                             ));
                             kafkacmd::send_to_kafka_queue_failed(
                                 hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
@@ -234,7 +207,17 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             Err(err)
                         }
                     }
-                }
+                    Err(arg) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", arg));
+                        kafkacmd::send_to_kafka_queue_failed(
+                            hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            String::from("CLIENT-FAILED-REQUEST"),
+                            "CreateLendOrderfailed",
+                        );
+                        Err(err)
+                    }
+                },
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
@@ -251,19 +234,9 @@ pub fn kafka_queue_rpc_server_with_zkos() {
             let request: Result<ExecuteTraderOrderZkos, jsonrpc_core::Error>;
             // match params.parse::<String>()
             request = match params.parse::<ByteRec>() {
-                Ok(hex_data) => {
-                    match hex::decode(hex_data.data) {
-                        Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
-                            Ok(ordertx) => Ok(ordertx),
-                            Err(args) => {
-                                let err = JsonRpcError::invalid_params(format!(
-                                    "Invalid parameters, {:?}",
-                                    args
-                                ));
-                                Err(err)
-                            }
-                        },
-                        // Ok(hex_data) => Ok(hex_data),
+                Ok(hex_data) => match hex::decode(hex_data.data) {
+                    Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                        Ok(ordertx) => Ok(ordertx),
                         Err(args) => {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
@@ -271,8 +244,13 @@ pub fn kafka_queue_rpc_server_with_zkos() {
                             ));
                             Err(err)
                         }
+                    },
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
                     }
-                }
+                },
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
