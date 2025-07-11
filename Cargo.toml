@@ -29,20 +29,6 @@ jsonrpc-core = "18.0.0"
 hex = "*"
 bincode = "1.3.3"
 
-[dependencies.transaction]
-git = "https://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
-[dependencies.quisquis-rust]
-git = "https://github.com/twilight-project/quisquis-rust.git"
-branch = "develop"
-[dependencies.zkvm]
-git = "https://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
-[dependencies.zkschnorr]
-git = "https://github.com/twilight-project/zk-schnorr.git"
-[dependencies.address]
-git = "https://github.com/twilight-project/zkos-rust.git"
-branch = "develop"
 [dependencies.twilight-relayer-sdk]
 git = "https://github.com/twilight-project/twilight-relayer-sdk.git"
 branch = "develop"
