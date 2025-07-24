@@ -48,10 +48,10 @@ BROKER=localhost:9092
 
 ```env
 # Relayer version identifier (default: 0.1.0)
-RelayerVersion=0.1.0
+RelayerVersion=v0.1.0
 
 # Snapshot version for the system (default: 0.1.0)
-SnapshotVersion=0.1.0
+SnapshotVersion=v0.1.0
 
 # RPC queue mode operation setting (default: DIRECT)
 RPC_QUEUE_MODE=DIRECT
