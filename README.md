@@ -42,6 +42,7 @@ Configure the following environment variables in your `.env` file:
 ```env
 # Kafka broker address for message queue operations (REQUIRED)
 BROKER=localhost:9092
+
 ```
 
 #### Optional Variables (with defaults)
@@ -91,10 +92,10 @@ cargo build --release
 
 ```bash
 # Build development image
-docker build -f Dockerfile.dev -t relayer-order-api:dev .
+docker build -f Dockerfile -t relayer-order-api:dev .
 
 # Run development container
-docker run -p 3032:3032 --env-file .env relayer-order-api:dev
+docker run -p 3032:3032 relayer-order-api:dev
 ```
 
 #### Production Container
@@ -104,7 +105,7 @@ docker run -p 3032:3032 --env-file .env relayer-order-api:dev
 docker build -t relayer-order-api:latest .
 
 # Run production container
-docker run -p 3032:3032 --env-file .env relayer-order-api:latest
+docker run -p 3032:3032 relayer-order-api:latest
 ```
 
 ## API Endpoints

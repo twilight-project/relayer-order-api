@@ -1,1 +1,8 @@
 /target
+Dockerfile
+.gitignore
+.git
+.github
+.vscode
+.env.example
+.dockerignore

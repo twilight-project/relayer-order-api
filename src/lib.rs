@@ -80,11 +80,9 @@
 //! ## Example
 //!
 //! ```no_run
-//! use relayer_order_api::relayer::rpc_server;
-//!
 //! fn main() {
 //!     // Start the RPC server
-//!     rpc_server();
+//!     let _ = order_api::relayer::rpc_server();
 //! }
 //! ```
 //!

@@ -8,6 +8,7 @@ use jsonrpc_http_server::{
     ServerBuilder,
 };
 use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::HashMap;
 use std::time::SystemTime;
 use twilight_relayer_sdk::verify_client_message::*;
@@ -17,8 +18,20 @@ pub struct Meta {
 }
 impl Metadata for Meta {}
 
-pub fn rpc_server() {
+pub fn rpc_server() -> Result<(), String> {
     let mut io = MetaIoHandler::default();
+
+    // Healthcheck
+    // A simple endpoint to verify that the RPC server is running
+    io.add_method("healthcheck", move |_params: Params| async move {
+        Ok(json!({
+            "status": "ok",
+            "timestamp": SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+        }))
+    });
 
     // CreateTraderOrder
     // Handles the creation of new trader orders (market and limit orders)
@@ -60,33 +73,62 @@ pub fn rpc_server() {
                         Ok(_) => {
                             let mut order_request = ordertx.create_trader_order.clone();
 
-                            let response_clone = order_request.account_id.clone();
+                            let account_id = order_request.account_id.clone();
                             let response = RequestResponse::new(
                                 "Order request submitted successfully".to_string(),
-                                response_clone,
+                                account_id,
                             );
                             let response_id = response.get_id();
                             let margin = order_request.initial_margin;
                             order_request.available_margin = margin;
                             if order_request.initial_margin > 0.0 && order_request.leverage <= 50.0
                             {
+                                let zkos_tx_string = match bincode::serialize(&ordertx.tx) {
+                                    Ok(tx) => hex::encode(tx),
+                                    Err(e) => {
+                                        return Err(JsonRpcError::invalid_params(format!(
+                                            "Failed to serialize zkos tx: {:?}",
+                                            e
+                                        )));
+                                    }
+                                };
+
                                 let data = RpcCommand::CreateTraderOrder(
                                     order_request,
                                     meta,
-                                    hex::encode(bincode::serialize(&ordertx.tx).unwrap()),
+                                    zkos_tx_string,
                                     response_id,
                                 );
+                                let response_value = match serde_json::to_value(&response) {
+                                    Ok(value) => value,
+                                    Err(e) => {
+                                        return Err(JsonRpcError::invalid_params(format!(
+                                            "Failed to serialize response: {:?}",
+                                            e
+                                        )));
+                                    }
+                                };
                                 //call verifier to check balance, etc...
                                 //if verified the call kafkacmd::send_to_kafka_queue
                                 //also convert public key into hash fn and put it in account_id field
-                                kafkacmd::send_to_kafka_queue(
+                                match kafkacmd::send_to_kafka_queue(
                                     data.clone(),
                                     String::from("CLIENT-REQUEST"),
-                                    "CreateTraderOrder",
-                                );
-                                println!("orderdata : {:?}", data);
-
-                                Ok(serde_json::to_value(&response).unwrap())
+                                    &format!(
+                                        "CreateTraderOrder-{}",
+                                        std::time::SystemTime::now()
+                                            .duration_since(SystemTime::UNIX_EPOCH)
+                                            .unwrap()
+                                            .as_micros()
+                                            .to_string()
+                                    ),
+                                ) {
+                                    Ok(_) => Ok(response_value),
+                                    Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to send to kafka queue: {:?}",
+                                        e
+                                    ))),
+                                }
                             } else {
                                 let err;
                                 if order_request.initial_margin <= 0.0 {
@@ -100,8 +142,8 @@ pub fn rpc_server() {
                                         order_request.leverage
                                     ));
                                 }
-                                kafkacmd::send_to_kafka_queue_failed(
-                                    hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                                let _ = kafkacmd::send_to_kafka_queue_failed(
+                                    ordertx.encode_as_hex_string().unwrap(),
                                     String::from("CLIENT-FAILED-REQUEST"),
                                     "CreateTraderOrderfailed",
                                 );
@@ -113,10 +155,17 @@ pub fn rpc_server() {
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
-                            kafkacmd::send_to_kafka_queue_failed(
-                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string().unwrap(),
                                 String::from("CLIENT-FAILED-REQUEST"),
-                                "CreateTraderOrderfailed",
+                                &format!(
+                                    "CreateTraderOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
                             );
                             Err(err)
                         }
@@ -187,7 +236,16 @@ pub fn rpc_server() {
                                 ordertx.input.encode_as_hex_string(),
                                 response_id,
                             );
-                            kafkacmd::send_to_kafka_queue(
+                            let response_value = match serde_json::to_value(&response) {
+                                Ok(value) => value,
+                                Err(e) => {
+                                    return Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to serialize response: {:?}",
+                                        e
+                                    )));
+                                }
+                            };
+                            match kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
                                 &format!(
@@ -198,17 +256,30 @@ pub fn rpc_server() {
                                         .as_micros()
                                         .to_string()
                                 ),
-                            );
-                            Ok(serde_json::to_value(&response).unwrap())
+                            ) {
+                                Ok(_) => Ok(response_value),
+                                Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to send to kafka queue: {:?}",
+                                    e
+                                ))),
+                            }
+                            // Ok(serde_json::to_value(&response).unwrap())
                         } else {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
                                 "Invalid deposit amount"
                             ));
-                            kafkacmd::send_to_kafka_queue_failed(
-                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string(),
                                 String::from("CLIENT-FAILED-REQUEST"),
-                                "CreateLendOrderfailed",
+                                &format!(
+                                    "CreateLendOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
                             );
                             Err(err)
                         }
@@ -216,10 +287,17 @@ pub fn rpc_server() {
                     Err(arg) => {
                         let err =
                             JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", arg));
-                        kafkacmd::send_to_kafka_queue_failed(
-                            hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                        let _ = kafkacmd::send_to_kafka_queue_failed(
+                            ordertx.encode_as_hex_string(),
                             String::from("CLIENT-FAILED-REQUEST"),
-                            "CreateLendOrderfailed",
+                            &format!(
+                                "CreateLendOrderfailed-{}",
+                                std::time::SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_micros()
+                                    .to_string()
+                            ),
                         );
                         Err(err)
                     }
@@ -271,11 +349,11 @@ pub fn rpc_server() {
                 Ok(ordertx) => match verify_settle_requests(&ordertx.msg) {
                     Ok(_) => {
                         let settle_request = ordertx.execute_trader_order.clone();
-                        let response_clone = settle_request.account_id.clone();
+                        let account_id = settle_request.account_id.clone();
 
                         let response = RequestResponse::new(
                             "Order request submitted successfully".to_string(),
-                            response_clone,
+                            account_id,
                         );
                         let response_id = response.get_id();
 
@@ -285,21 +363,48 @@ pub fn rpc_server() {
                             ordertx.msg.encode_as_hex_string(),
                             response_id,
                         );
-                        kafkacmd::send_to_kafka_queue(
+                        let response_value = match serde_json::to_value(&response) {
+                            Ok(value) => value,
+                            Err(e) => {
+                                return Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to serialize response: {:?}",
+                                    e
+                                )));
+                            }
+                        };
+                        match kafkacmd::send_to_kafka_queue(
                             data,
                             String::from("CLIENT-REQUEST"),
-                            "ExecuteTraderOrder",
-                        );
-
-                        Ok(serde_json::to_value(&response).unwrap())
+                            &format!(
+                                "ExecuteTraderOrder-{}",
+                                std::time::SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_micros()
+                                    .to_string()
+                            ),
+                        ) {
+                            Ok(_) => Ok(response_value),
+                            Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                "Failed to send to kafka queue: {:?}",
+                                e
+                            ))),
+                        }
                     }
                     Err(arg) => {
                         let err =
                             JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", arg));
-                        kafkacmd::send_to_kafka_queue_failed(
-                            hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                        let _ = kafkacmd::send_to_kafka_queue_failed(
+                            ordertx.encode_as_hex_string(),
                             String::from("CLIENT-FAILED-REQUEST"),
-                            "ExecuteTraderOrderfailed",
+                            &format!(
+                                "ExecuteTraderOrderfailed-{}",
+                                std::time::SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_micros()
+                                    .to_string()
+                            ),
                         );
                         Err(err)
                     }
@@ -360,10 +465,10 @@ pub fn rpc_server() {
                         Ok(_) => {
                             let settle_request = ordertx.execute_lend_order.clone();
 
-                            let response_clone = settle_request.account_id.clone();
+                            let account_id = settle_request.account_id.clone();
                             let response = RequestResponse::new(
                                 "Order request submitted successfully".to_string(),
-                                response_clone,
+                                account_id,
                             );
                             let response_id = response.get_id();
                             let data = RpcCommand::ExecuteLendOrder(
@@ -372,22 +477,51 @@ pub fn rpc_server() {
                                 ordertx.msg.encode_as_hex_string(),
                                 response_id,
                             );
-                            kafkacmd::send_to_kafka_queue(
+                            let response_value = match serde_json::to_value(&response) {
+                                Ok(value) => value,
+                                Err(e) => {
+                                    return Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to serialize response: {:?}",
+                                        e
+                                    )));
+                                }
+                            };
+
+                            match kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
-                                "ExecuteLendOrder",
-                            );
-                            Ok(serde_json::to_value(&response).unwrap())
+                                &format!(
+                                    "ExecuteLendOrder-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
+                            ) {
+                                Ok(_) => Ok(response_value),
+                                Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to send to kafka queue: {:?}",
+                                    e
+                                ))),
+                            }
                         }
                         Err(arg) => {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
-                            kafkacmd::send_to_kafka_queue_failed(
-                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string(),
                                 String::from("CLIENT-FAILED-REQUEST"),
-                                "ExecuteLendOrderfailed",
+                                &format!(
+                                    "ExecuteLendOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
                             );
                             Err(err)
                         }
@@ -452,10 +586,10 @@ pub fn rpc_server() {
                         Ok(_) => {
                             let cancel_request = ordertx.cancel_trader_order.clone();
 
-                            let response_clone = cancel_request.account_id.clone();
+                            let account_id = cancel_request.account_id.clone();
                             let response = RequestResponse::new(
                                 "Order request submitted successfully".to_string(),
-                                response_clone,
+                                account_id,
                             );
                             let response_id = response.get_id();
                             let data = RpcCommand::CancelTraderOrder(
@@ -464,23 +598,51 @@ pub fn rpc_server() {
                                 ordertx.msg.encode_as_hex_string(),
                                 response_id,
                             );
-                            kafkacmd::send_to_kafka_queue(
+
+                            let response_value = match serde_json::to_value(&response) {
+                                Ok(value) => value,
+                                Err(e) => {
+                                    return Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to serialize response: {:?}",
+                                        e
+                                    )));
+                                }
+                            };
+                            match kafkacmd::send_to_kafka_queue(
                                 data,
                                 String::from("CLIENT-REQUEST"),
-                                "CancelTraderOrder",
-                            );
-
-                            Ok(serde_json::to_value(&response).unwrap())
+                                &format!(
+                                    "CancelTraderOrder-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
+                            ) {
+                                Ok(_) => Ok(response_value),
+                                Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to send to kafka queue: {:?}",
+                                    e
+                                ))),
+                            }
                         }
                         Err(arg) => {
                             let err = JsonRpcError::invalid_params(format!(
                                 "Invalid parameters, {:?}",
                                 arg
                             ));
-                            kafkacmd::send_to_kafka_queue_failed(
-                                hex::encode(bincode::serialize(&ordertx.clone()).unwrap()),
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string(),
                                 String::from("CLIENT-FAILED-REQUEST"),
-                                "CancelTraderOrderfailed",
+                                &format!(
+                                    "CancelTraderOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros()
+                                        .to_string()
+                                ),
                             );
                             Err(err)
                         }
@@ -496,6 +658,10 @@ pub fn rpc_server() {
     );
 
     println!("Starting jsonRPC server @ {}", *RPC_SERVER_SOCKETADDR);
+    let socket_addr = match RPC_SERVER_SOCKETADDR.parse() {
+        Ok(addr) => addr,
+        Err(e) => return Err(format!("Invalid socket address: {:?}", e)),
+    };
     let server = ServerBuilder::new(io)
         .threads(*RPC_SERVER_THREAD)
         .meta_extractor(|req: &hyper::Request<hyper::Body>| {
@@ -526,17 +692,38 @@ pub fn rpc_server() {
                 },
             }
         })
-        .start_http(&RPC_SERVER_SOCKETADDR.parse().unwrap())
-        .unwrap();
+        .start_http(&socket_addr)
+        .map_err(|e| e.to_string())?;
     server.wait();
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jsonrpc_core::types::response::Output;
-    use jsonrpc_core::{Request, Value};
+    use jsonrpc_core::Request;
     use std::collections::HashMap;
+
+    #[tokio::test]
+    async fn test_healthcheck() {
+        let mut io = MetaIoHandler::default();
+        io.add_method("healthcheck", |_params: Params| async {
+            Ok(json!({
+                "status": "ok",
+                "timestamp": SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_micros()
+            }))
+        });
+
+        let request = r#"{"jsonrpc": "2.0", "method": "healthcheck", "id": 1}"#;
+        let response = io.handle_request(request, Meta::default()).await;
+
+        let expected = r#""status":"ok""#;
+        assert!(response.is_some());
+        assert!(response.unwrap().contains(expected));
+    }
 
     #[test]
     fn test_rpc_server_metadata_extraction() {
