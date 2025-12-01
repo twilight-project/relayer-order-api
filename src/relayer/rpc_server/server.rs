@@ -40,9 +40,9 @@ pub fn rpc_server() -> Result<(), String> {
     io.add_method_with_meta(
         "CreateTraderOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<CreateTraderOrderClientZkos, jsonrpc_core::Error>;
-            // match params.parse::<String>()
-            request = match params.parse::<ByteRec>() {
+            let request: Result<CreateTraderOrderClientZkos, jsonrpc_core::Error> = match params
+                .parse::<ByteRec>(
+            ) {
                 Ok(hex_data) => match hex::decode(hex_data.data) {
                     Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
                         Ok(ordertx) => Ok(ordertx),
@@ -120,7 +120,6 @@ pub fn rpc_server() -> Result<(), String> {
                                             .duration_since(SystemTime::UNIX_EPOCH)
                                             .unwrap()
                                             .as_micros()
-                                            .to_string()
                                     ),
                                 ) {
                                     Ok(_) => Ok(response_value),
@@ -130,24 +129,27 @@ pub fn rpc_server() -> Result<(), String> {
                                     ))),
                                 }
                             } else {
-                                let err;
-                                if order_request.initial_margin <= 0.0 {
-                                    err = JsonRpcError::invalid_params(format!(
-                                        "Invalid initial margin:{:?}, should be greater than 0",
-                                        order_request.initial_margin
-                                    ));
-                                } else {
-                                    err = JsonRpcError::invalid_params(format!(
-                                        "Invalid leverage:{:?}, should be less than or equal to 50",
-                                        order_request.leverage
-                                    ));
-                                }
+                                // let err;
                                 let _ = kafkacmd::send_to_kafka_queue_failed(
                                     ordertx.encode_as_hex_string().unwrap(),
                                     String::from("CLIENT-FAILED-REQUEST"),
                                     "CreateTraderOrderfailed",
                                 );
-                                Err(err)
+                                if order_request.initial_margin <= 0.0 {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid initial margin:{:?}, should be greater than 0",
+                                        order_request.initial_margin
+                                    ));
+                                    Err(err)
+                                } else {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid leverage:{:?}, should be less than or equal to 50",
+                                        order_request.leverage
+                                    ));
+                                    Err(err)
+                                }
+
+                                // Err(err)
                             }
                         }
                         Err(arg) => {
@@ -163,8 +165,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             );
                             Err(err)
@@ -187,9 +188,9 @@ pub fn rpc_server() -> Result<(), String> {
     io.add_method_with_meta(
         "CreateLendOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<CreateLendOrderZkos, jsonrpc_core::Error>;
-            // match params.parse::<String>()
-            request = match params.parse::<ByteRec>() {
+            let request: Result<CreateLendOrderZkos, jsonrpc_core::Error> = match params
+                .parse::<ByteRec>()
+            {
                 Ok(hex_data) => match hex::decode(hex_data.data) {
                     Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
                         Ok(ordertx) => Ok(ordertx),
@@ -254,7 +255,6 @@ pub fn rpc_server() -> Result<(), String> {
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
                                         .as_micros()
-                                        .to_string()
                                 ),
                             ) {
                                 Ok(_) => Ok(response_value),
@@ -277,8 +277,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             );
                             Err(err)
@@ -295,8 +294,7 @@ pub fn rpc_server() -> Result<(), String> {
                                 std::time::SystemTime::now()
                                     .duration_since(SystemTime::UNIX_EPOCH)
                                     .unwrap()
-                                    .as_micros()
-                                    .to_string()
+                                    .as_micros() // .to_string()
                             ),
                         );
                         Err(err)
@@ -318,9 +316,9 @@ pub fn rpc_server() -> Result<(), String> {
     io.add_method_with_meta(
         "ExecuteTraderOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<ExecuteTraderOrderZkos, jsonrpc_core::Error>;
-            // match params.parse::<String>()
-            request = match params.parse::<ByteRec>() {
+            let request: Result<ExecuteTraderOrderZkos, jsonrpc_core::Error> = match params
+                .parse::<ByteRec>()
+            {
                 Ok(hex_data) => match hex::decode(hex_data.data) {
                     Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
                         Ok(ordertx) => Ok(ordertx),
@@ -380,8 +378,7 @@ pub fn rpc_server() -> Result<(), String> {
                                 std::time::SystemTime::now()
                                     .duration_since(SystemTime::UNIX_EPOCH)
                                     .unwrap()
-                                    .as_micros()
-                                    .to_string()
+                                    .as_micros() // .to_string()
                             ),
                         ) {
                             Ok(_) => Ok(response_value),
@@ -402,13 +399,386 @@ pub fn rpc_server() -> Result<(), String> {
                                 std::time::SystemTime::now()
                                     .duration_since(SystemTime::UNIX_EPOCH)
                                     .unwrap()
-                                    .as_micros()
-                                    .to_string()
+                                    .as_micros() // .to_string()
                             ),
                         );
                         Err(err)
                     }
                 },
+                Err(args) => {
+                    let err =
+                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                    Err(err)
+                }
+            }
+        },
+    );
+
+    // CreateTraderOrderSlTp
+    // Handles the creation of new trader orders (limit/market) with stop loss and take profit
+    // Validates order parameters including initial margin and leverage constraints
+    // Verifies zero-knowledge proofs and processes the order through Kafka queue
+    io.add_method_with_meta(
+        "CreateTraderOrderSlTp",
+        move |params: Params, meta: Meta| async move {
+            let request: Result<CreateTraderOrderClientZkosSlTp, jsonrpc_core::Error> = match params
+                .parse::<ByteRec>()
+            {
+                Ok(hex_data) => match hex::decode(hex_data.data) {
+                    Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                        Ok(ordertx) => Ok(ordertx),
+                        Err(args) => {
+                            let err = JsonRpcError::invalid_params(format!(
+                                "Invalid parameters, {:?}",
+                                args
+                            ));
+                            Err(err)
+                        }
+                    },
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
+                    }
+                },
+                Err(args) => {
+                    let err =
+                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                    Err(err)
+                }
+            };
+
+            match request {
+                Ok(ordertx) => {
+                    match verify_client_create_trader_order(&ordertx.tx) {
+                        Ok(_) => {
+                            let mut order_request = ordertx.create_trader_order.clone();
+
+                            let account_id = order_request.account_id.clone();
+                            let response = RequestResponse::new(
+                                "Order request submitted successfully".to_string(),
+                                account_id,
+                            );
+                            let response_id = response.get_id();
+                            let margin = order_request.initial_margin;
+                            order_request.available_margin = margin;
+                            if order_request.initial_margin > 0.0 && order_request.leverage <= 50.0
+                            {
+                                let zkos_tx_string = match bincode::serialize(&ordertx.tx) {
+                                    Ok(tx) => hex::encode(tx),
+                                    Err(e) => {
+                                        return Err(JsonRpcError::invalid_params(format!(
+                                            "Failed to serialize zkos tx: {:?}",
+                                            e
+                                        )));
+                                    }
+                                };
+
+                                let data = RpcCommand::CreateTraderOrderSlTp(
+                                    order_request,
+                                    ordertx.sltp,
+                                    ordertx.msg,
+                                    meta,
+                                    zkos_tx_string,
+                                    response_id,
+                                );
+                                let response_value = match serde_json::to_value(&response) {
+                                    Ok(value) => value,
+                                    Err(e) => {
+                                        return Err(JsonRpcError::invalid_params(format!(
+                                            "Failed to serialize response: {:?}",
+                                            e
+                                        )));
+                                    }
+                                };
+                                //call verifier to check balance, etc...
+                                //if verified the call kafkacmd::send_to_kafka_queue
+                                //also convert public key into hash fn and put it in account_id field
+                                match kafkacmd::send_to_kafka_queue(
+                                    data.clone(),
+                                    String::from("CLIENT-REQUEST"),
+                                    &format!(
+                                        "CreateTraderOrder-{}",
+                                        std::time::SystemTime::now()
+                                            .duration_since(SystemTime::UNIX_EPOCH)
+                                            .unwrap()
+                                            .as_micros()
+                                            .to_string()
+                                    ),
+                                ) {
+                                    Ok(_) => Ok(response_value),
+                                    Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to send to kafka queue: {:?}",
+                                        e
+                                    ))),
+                                }
+                            } else {
+                                // let err;
+                                let _ = kafkacmd::send_to_kafka_queue_failed(
+                                    ordertx.encode_as_hex_string().unwrap(),
+                                    String::from("CLIENT-FAILED-REQUEST"),
+                                    "CreateTraderOrderfailed",
+                                );
+                                if order_request.initial_margin <= 0.0 {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid initial margin:{:?}, should be greater than 0",
+                                        order_request.initial_margin
+                                    ));
+                                    Err(err)
+                                } else {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid leverage:{:?}, should be less than or equal to 50",
+                                        order_request.leverage
+                                    ));
+                                    Err(err)
+                                }
+
+                                // Err(err)
+                            }
+                        }
+                        Err(arg) => {
+                            let err = JsonRpcError::invalid_params(format!(
+                                "Invalid parameters, {:?}",
+                                arg
+                            ));
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string().unwrap(),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                &format!(
+                                    "CreateTraderOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros() // .to_string()
+                                ),
+                            );
+                            Err(err)
+                        }
+                    }
+                }
+                Err(args) => {
+                    let err =
+                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                    Err(err)
+                }
+            }
+        },
+    );
+    // ExecuteTraderOrderSlTp
+    // Handles the execution/settlement of existing trader orders
+    // Processes order settlements and validates settlement requests
+    // Verifies settlement proofs and coordinates order execution
+    io.add_method_with_meta(
+        "ExecuteTraderOrderSlTp",
+        move |params: Params, meta: Meta| async move {
+            let request: Result<ExecuteTraderOrderZkosSlTp, jsonrpc_core::Error> = match params
+                .parse::<ByteRec>(
+            ) {
+                Ok(hex_data) => match hex::decode(hex_data.data) {
+                    Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                        Ok(ordertx) => Ok(ordertx),
+                        Err(args) => {
+                            let err = JsonRpcError::invalid_params(format!(
+                                "Invalid parameters, {:?}",
+                                args
+                            ));
+                            Err(err)
+                        }
+                    },
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
+                    }
+                },
+                Err(args) => {
+                    let err =
+                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                    Err(err)
+                }
+            };
+
+            match request {
+                Ok(ordertx) => match verify_settle_requests(&ordertx.msg) {
+                    Ok(_) => {
+                        let settle_request = ordertx.execute_trader_order.clone();
+                        let account_id = settle_request.account_id.clone();
+
+                        let response = RequestResponse::new(
+                            "Order request submitted successfully".to_string(),
+                            account_id,
+                        );
+                        let response_id = response.get_id();
+
+                        let data = RpcCommand::ExecuteTraderOrderSlTp(
+                            settle_request,
+                            ordertx.sltp,
+                            meta,
+                            ordertx.msg.encode_as_hex_string(),
+                            response_id,
+                        );
+                        let response_value = match serde_json::to_value(&response) {
+                            Ok(value) => value,
+                            Err(e) => {
+                                return Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to serialize response: {:?}",
+                                    e
+                                )));
+                            }
+                        };
+                        match kafkacmd::send_to_kafka_queue(
+                            data,
+                            String::from("CLIENT-REQUEST"),
+                            &format!(
+                                "ExecuteTraderOrderSlTp-{}",
+                                std::time::SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_micros() // .to_string()
+                            ),
+                        ) {
+                            Ok(_) => Ok(response_value),
+                            Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                "Failed to send to kafka queue: {:?}",
+                                e
+                            ))),
+                        }
+                    }
+                    Err(arg) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", arg));
+                        let _ = kafkacmd::send_to_kafka_queue_failed(
+                            ordertx.encode_as_hex_string(),
+                            String::from("CLIENT-FAILED-REQUEST"),
+                            &format!(
+                                "ExecuteTraderOrderSlTpfailed-{}",
+                                std::time::SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_micros() // .to_string()
+                            ),
+                        );
+                        Err(err)
+                    }
+                },
+                Err(args) => {
+                    let err =
+                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                    Err(err)
+                }
+            }
+        },
+    );
+    // CancelTraderOrderSlTp
+    // Handles the cancellation of existing trader orders with stop loss and take profit
+    // Validates cancellation requests and processes order cancellations
+    // Verifies query order proofs and manages order state transitions
+    io.add_method_with_meta(
+        "CancelTraderOrderSlTp",
+        move |params: Params, meta: Meta| async move {
+            let request: Result<CancelTraderOrderZkosSlTp, jsonrpc_core::Error> =
+                match params.parse::<ByteRec>() {
+                    Ok(hex_data) => {
+                        match hex::decode(hex_data.data) {
+                            Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                                Ok(ordertx) => Ok(ordertx),
+                                Err(args) => {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid parameters, {:?}",
+                                        args
+                                    ));
+                                    Err(err)
+                                }
+                            },
+                            // Ok(hex_data) => Ok(hex_data),
+                            Err(args) => {
+                                let err = JsonRpcError::invalid_params(format!(
+                                    "Invalid parameters, {:?}",
+                                    args
+                                ));
+                                Err(err)
+                            }
+                        }
+                    }
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
+                    }
+                };
+
+            match request {
+                Ok(ordertx) => {
+                    //to get public key from data
+
+                    match verify_query_order(
+                        ordertx.msg.convert_cancel_to_query(),
+                        &bincode::serialize(&ordertx.cancel_trader_order).unwrap(),
+                    ) {
+                        Ok(_) => {
+                            let cancel_request = ordertx.cancel_trader_order.clone();
+
+                            let account_id = cancel_request.account_id.clone();
+                            let response = RequestResponse::new(
+                                "Order request submitted successfully".to_string(),
+                                account_id,
+                            );
+                            let response_id = response.get_id();
+                            let data = RpcCommand::CancelTraderOrderSlTp(
+                                cancel_request,
+                                ordertx.sltp_cancel,
+                                meta,
+                                ordertx.msg.encode_as_hex_string(),
+                                response_id,
+                            );
+
+                            let response_value = match serde_json::to_value(&response) {
+                                Ok(value) => value,
+                                Err(e) => {
+                                    return Err(JsonRpcError::invalid_params(format!(
+                                        "Failed to serialize response: {:?}",
+                                        e
+                                    )));
+                                }
+                            };
+                            match kafkacmd::send_to_kafka_queue(
+                                data,
+                                String::from("CLIENT-REQUEST"),
+                                &format!(
+                                    "CancelTraderOrder-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros() // .to_string()
+                                ),
+                            ) {
+                                Ok(_) => Ok(response_value),
+                                Err(e) => Err(JsonRpcError::invalid_params(format!(
+                                    "Failed to send to kafka queue: {:?}",
+                                    e
+                                ))),
+                            }
+                        }
+                        Err(arg) => {
+                            let err = JsonRpcError::invalid_params(format!(
+                                "Invalid parameters, {:?}",
+                                arg
+                            ));
+                            let _ = kafkacmd::send_to_kafka_queue_failed(
+                                ordertx.encode_as_hex_string(),
+                                String::from("CLIENT-FAILED-REQUEST"),
+                                &format!(
+                                    "CancelTraderOrderfailed-{}",
+                                    std::time::SystemTime::now()
+                                        .duration_since(SystemTime::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_micros() // .to_string()
+                                ),
+                            );
+                            Err(err)
+                        }
+                    }
+                }
                 Err(args) => {
                     let err =
                         JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
@@ -425,13 +795,21 @@ pub fn rpc_server() -> Result<(), String> {
     io.add_method_with_meta(
         "ExecuteLendOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<ExecuteLendOrderZkos, jsonrpc_core::Error>;
-            // match params.parse::<String>()
-            request = match params.parse::<ByteRec>() {
-                Ok(hex_data) => {
-                    match hex::decode(hex_data.data) {
-                        Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
-                            Ok(ordertx) => Ok(ordertx),
+            let request: Result<ExecuteLendOrderZkos, jsonrpc_core::Error> =
+                match params.parse::<ByteRec>() {
+                    Ok(hex_data) => {
+                        match hex::decode(hex_data.data) {
+                            Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                                Ok(ordertx) => Ok(ordertx),
+                                Err(args) => {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid parameters, {:?}",
+                                        args
+                                    ));
+                                    Err(err)
+                                }
+                            },
+                            // Ok(hex_data) => Ok(hex_data),
                             Err(args) => {
                                 let err = JsonRpcError::invalid_params(format!(
                                     "Invalid parameters, {:?}",
@@ -439,23 +817,14 @@ pub fn rpc_server() -> Result<(), String> {
                                 ));
                                 Err(err)
                             }
-                        },
-                        // Ok(hex_data) => Ok(hex_data),
-                        Err(args) => {
-                            let err = JsonRpcError::invalid_params(format!(
-                                "Invalid parameters, {:?}",
-                                args
-                            ));
-                            Err(err)
                         }
                     }
-                }
-                Err(args) => {
-                    let err =
-                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
-                    Err(err)
-                }
-            };
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
+                    }
+                };
 
             match request {
                 Ok(ordertx) => {
@@ -495,8 +864,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             ) {
                                 Ok(_) => Ok(response_value),
@@ -519,8 +887,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             );
                             Err(err)
@@ -543,13 +910,21 @@ pub fn rpc_server() -> Result<(), String> {
     io.add_method_with_meta(
         "CancelTraderOrder",
         move |params: Params, meta: Meta| async move {
-            let request: Result<CancelTraderOrderZkos, jsonrpc_core::Error>;
-            // match params.parse::<String>()
-            request = match params.parse::<ByteRec>() {
-                Ok(hex_data) => {
-                    match hex::decode(hex_data.data) {
-                        Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
-                            Ok(ordertx) => Ok(ordertx),
+            let request: Result<CancelTraderOrderZkos, jsonrpc_core::Error> =
+                match params.parse::<ByteRec>() {
+                    Ok(hex_data) => {
+                        match hex::decode(hex_data.data) {
+                            Ok(order_bytes) => match bincode::deserialize(&order_bytes) {
+                                Ok(ordertx) => Ok(ordertx),
+                                Err(args) => {
+                                    let err = JsonRpcError::invalid_params(format!(
+                                        "Invalid parameters, {:?}",
+                                        args
+                                    ));
+                                    Err(err)
+                                }
+                            },
+                            // Ok(hex_data) => Ok(hex_data),
                             Err(args) => {
                                 let err = JsonRpcError::invalid_params(format!(
                                     "Invalid parameters, {:?}",
@@ -557,23 +932,14 @@ pub fn rpc_server() -> Result<(), String> {
                                 ));
                                 Err(err)
                             }
-                        },
-                        // Ok(hex_data) => Ok(hex_data),
-                        Err(args) => {
-                            let err = JsonRpcError::invalid_params(format!(
-                                "Invalid parameters, {:?}",
-                                args
-                            ));
-                            Err(err)
                         }
                     }
-                }
-                Err(args) => {
-                    let err =
-                        JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
-                    Err(err)
-                }
-            };
+                    Err(args) => {
+                        let err =
+                            JsonRpcError::invalid_params(format!("Invalid parameters, {:?}", args));
+                        Err(err)
+                    }
+                };
 
             match request {
                 Ok(ordertx) => {
@@ -616,8 +982,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             ) {
                                 Ok(_) => Ok(response_value),
@@ -640,8 +1005,7 @@ pub fn rpc_server() -> Result<(), String> {
                                     std::time::SystemTime::now()
                                         .duration_since(SystemTime::UNIX_EPOCH)
                                         .unwrap()
-                                        .as_micros()
-                                        .to_string()
+                                        .as_micros() // .to_string()
                                 ),
                             );
                             Err(err)

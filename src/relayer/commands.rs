@@ -11,4 +11,26 @@ pub enum RpcCommand {
     ExecuteLendOrder(ExecuteLendOrder, Meta, ZkosHexString, RequestId),
     CancelTraderOrder(CancelTraderOrder, Meta, ZkosHexString, RequestId),
     RelayerCommandTraderOrderSettleOnLimit(TraderOrder, Meta, f64),
+    ExecuteTraderOrderSlTp(
+        ExecuteTraderOrder,
+        Option<SlTpOrder>,
+        Meta,
+        ZkosHexString,
+        RequestId,
+    ),
+    CreateTraderOrderSlTp(
+        CreateTraderOrder,
+        Option<SlTpOrder>,
+        Option<ZkosSettleMsg>,
+        Meta,
+        ZkosHexString,
+        RequestId,
+    ),
+    CancelTraderOrderSlTp(
+        CancelTraderOrder,
+        SlTpOrderCancel,
+        Meta,
+        ZkosHexString,
+        RequestId,
+    ),
 }
