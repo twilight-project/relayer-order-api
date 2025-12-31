@@ -13,11 +13,12 @@ use std::{thread, time};
 lazy_static! {
     pub static ref KAFKA_PRODUCER: Mutex<Producer> = {
         dotenv::dotenv().ok();
-        let broker = match std::env::var("BROKER") {
-            Ok(broker_address) => broker_address,
-            Err(_) => "localhost:9092".to_string(),
-        };
-        let producer = Producer::from_hosts(vec![broker.to_owned()])
+        let broker: Vec<String> = std::env::var("BROKER")
+            .unwrap_or_else(|_| "localhost:9092".to_string())
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
+        let producer = Producer::from_hosts(broker.clone())
             .with_ack_timeout(Duration::from_secs(1))
             .with_required_acks(RequiredAcks::One)
             .create()
@@ -26,11 +27,12 @@ lazy_static! {
     };
     pub static ref KAFKA_CLIENT: Mutex<KafkaClient> = {
         dotenv::dotenv().ok();
-        let broker = match std::env::var("BROKER") {
-            Ok(broker_address) => broker_address,
-            Err(_) => "localhost:9092".to_string(),
-        };
-        Mutex::new(KafkaClient::new(vec![broker.to_owned()]))
+        let broker: Vec<String> = std::env::var("BROKER")
+            .unwrap_or_else(|_| "localhost:9092".to_string())
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
+        Mutex::new(KafkaClient::new(broker.clone()))
     };
 }
 
