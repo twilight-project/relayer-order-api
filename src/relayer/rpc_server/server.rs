@@ -1029,19 +1029,27 @@ pub fn rpc_server() -> Result<(), String> {
     let server = ServerBuilder::new(io)
         .threads(*RPC_SERVER_THREAD)
         .meta_extractor(|req: &hyper::Request<hyper::Body>| {
-            let auth = req
+            let content_type = req
                 .headers()
                 .get(hyper::header::CONTENT_TYPE)
-                .map(|h| h.to_str().unwrap_or("").to_owned());
+                .map(|h| h.to_str().ok().map(|s| s.to_owned()))
+                .flatten();
             let relayer = req
                 .headers()
                 .get("Relayer")
-                .map(|h| h.to_str().unwrap_or("").to_owned());
+                .map(|h| h.to_str().ok().map(|s| s.to_owned()))
+                .flatten();
+            let twilight_address = req
+                .headers()
+                .get("Twilight-Address")
+                .map(|h| h.to_str().ok().map(|s| s.to_owned()))
+                .flatten();
             Meta {
                 metadata: {
                     let mut hashmap = HashMap::new();
-                    hashmap.insert(String::from("CONTENT_TYPE"), auth);
+                    hashmap.insert(String::from("CONTENT_TYPE"), content_type);
                     hashmap.insert(String::from("Relayer"), relayer);
+                    hashmap.insert(String::from("Twilight-Address"), twilight_address);
                     hashmap.insert(
                         String::from("request_server_time"),
                         Some(
